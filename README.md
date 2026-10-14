@@ -1,2 +1,3 @@
 # ADALM-PLUTO-Project
-Projeto de CDIG B08
+Projeto de CDIG Turma 02 Bancada 08
+Gonçalo Nunes e Pedro Teixeira
