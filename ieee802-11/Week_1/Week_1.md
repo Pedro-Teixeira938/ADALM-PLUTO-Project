@@ -19,6 +19,13 @@ The protocoll operates at a 20Mhz frequency bandwidth, with it's operating frequ
   In comunication sistems, autocorrelation is needed to identify periodicities, especialy when trying to perform frame detection withought knowing the exact channel. The mathematical formula for autocorrelation is,$M(d) = \frac{|P(d)|^2}{(R(d))^2}$
  , and the Delay, Complex Conjugate, Multiply, Decimating FIR and Complex to mag blocks all perform a part of this equation.
  \(r(d+m)\) is our live signal, it is then delayed, which very direcly gives us \(r(d+m-D)\). The folowing step is to perform complex conjugation \(r^*(\cdot)\) and then multiply the live signal by this conjugated block. Summation then follows, which involves and addition of the multiplies signals from m=0 to L-1, where L is our window size, this is handled by the Decimating FIR. Finally we must perform the absolute of this operation, which is done by the complex to mag block.
+
+ Evaluation of results
+
+ In it's current iteration, the frame detection block succeeds in detecting frames, it works by It works by computing the normalized autocorrelation of the received signal with a lag of 16 samples, which rises close to 1 during the repeating short training sequence at the start of each WiFi frame and triggers a detection when it crosses the threshold. While it can detect wifi frames, it can also have false triggers because of interfearence, future blocks will be added (such as power gating and plateau duration checks) to minimize these false triggers. Lowering the threshold makes the detector more sensitive, so weaker frames are detected (and earlier on the rising edge) at the cost of more false triggers from noise and interference, while raising it reduces false triggers but causes weak frames to be missed and detected later.
+
+ ![Detected WiFi frame](images/frame_dec.png)
+*Figure 1: Normalized autocorrelation c[n] during reception of a WiFi frame (identifiable by the rising slope in p[n] (power, line in red). Followed by a false trigger at around 40us*
  
 
   
