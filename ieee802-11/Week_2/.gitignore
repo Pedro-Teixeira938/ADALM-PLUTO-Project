@@ -1,0 +1,9 @@
+# GRC-generated Python (regenerate with grcc or F5 in GRC)
+ofdm_pluto_link.py
+ofdm_pluto_link_packet_counter.py
+ofdm_loopback_example.py
+__pycache__/
+*.pyc
+rx_capture.cfile
+tx_capture.cfile
+*.cfile
