@@ -1,0 +1,938 @@
+options:
+  parameters:
+    author: ''
+    category: Custom
+    cmake_opt: ''
+    comment: ''
+    copyright: ''
+    description: 'Receiver half of a two-Pluto OFDM link, with link statistics and frequency-offset readout.'
+    gen_cmake: 'On'
+    gen_linking: dynamic
+    generate_options: qt_gui
+    hier_block_src_path: '.:'
+    id: ofdm_rx_pluto
+    max_nouts: '0'
+    output_language: python
+    placement: '(0,0)'
+    qt_qss_theme: ''
+    realtime_scheduling: ''
+    run: 'True'
+    run_command: '{python} -u {filename}'
+    run_options: prompt
+    sizing_mode: fixed
+    thread_safe_setters: ''
+    title: OFDM RX - ADALM-PLUTO
+    window_size: '1280, 1024'
+  states:
+    coordinate: [8, 12.0]
+    rotation: 0
+    state: enabled
+blocks:
+- name: samp_rate
+  id: variable
+  parameters:
+    comment: ''
+    value: '1000000'
+  states:
+    coordinate: [200, 12.0]
+    rotation: 0
+    state: enabled
+- name: center_freq
+  id: variable
+  parameters:
+    comment: Must match the TX flowgraph
+    value: '868000000'
+  states:
+    coordinate: [320, 12.0]
+    rotation: 0
+    state: enabled
+- name: pluto_uri
+  id: variable
+  parameters:
+    comment: ''
+    value: '"ip:192.168.2.1"'
+  states:
+    coordinate: [460, 12.0]
+    rotation: 0
+    state: enabled
+- name: fft_len
+  id: variable
+  parameters:
+    comment: ''
+    value: '64'
+  states:
+    coordinate: [620, 12.0]
+    rotation: 0
+    state: enabled
+- name: packet_len
+  id: variable
+  parameters:
+    comment: ''
+    value: '50'
+  states:
+    coordinate: [720, 12.0]
+    rotation: 0
+    state: enabled
+- name: len_tag_key
+  id: variable
+  parameters:
+    comment: ''
+    value: '"packet_len"'
+  states:
+    coordinate: [820, 12.0]
+    rotation: 0
+    state: enabled
+- name: occupied_carriers
+  id: variable
+  parameters:
+    comment: ''
+    value: '((-4,-3,-2,-1,1,2,3,4),)'
+  states:
+    coordinate: [200, 76.0]
+    rotation: 0
+    state: enabled
+- name: pilot_carriers
+  id: variable
+  parameters:
+    comment: ''
+    value: '((-6,-5,5,6),)'
+  states:
+    coordinate: [400, 76.0]
+    rotation: 0
+    state: enabled
+- name: pilot_symbols
+  id: variable
+  parameters:
+    comment: ''
+    value: '((-1,1,-1,1),)'
+  states:
+    coordinate: [580, 76.0]
+    rotation: 0
+    state: enabled
+- name: import_ofdm_txrx
+  id: import
+  parameters:
+    comment: Needed for the default sync words (same ones the OFDM Transmitter uses)
+    imports: from gnuradio.digital import ofdm_txrx
+  states:
+    coordinate: [960, 12.0]
+    rotation: 0
+    state: enabled
+- name: header_mod
+  id: variable
+  parameters:
+    comment: ''
+    value: digital.constellation_bpsk()
+  states:
+    coordinate: [780, 76.0]
+    rotation: 0
+    state: enabled
+- name: payload_mod
+  id: variable
+  parameters:
+    comment: ''
+    value: digital.constellation_qpsk()
+  states:
+    coordinate: [940, 76.0]
+    rotation: 0
+    state: enabled
+- name: frame_len_key
+  id: variable
+  parameters:
+    comment: ''
+    value: '"frame_length"'
+  states:
+    coordinate: [1100, 76.0]
+    rotation: 0
+    state: enabled
+- name: rx_len_key
+  id: variable
+  parameters:
+    comment: ''
+    value: '"rx_len"'
+  states:
+    coordinate: [1260, 76.0]
+    rotation: 0
+    state: enabled
+- name: sync_word1
+  id: variable
+  parameters:
+    comment: Same sync words the OFDM Transmitter generates when its sync words are None
+    value: 'ofdm_txrx._make_sync_word1(fft_len, occupied_carriers, pilot_carriers)'
+  states:
+    coordinate: [200, 140.0]
+    rotation: 0
+    state: enabled
+- name: sync_word2
+  id: variable
+  parameters:
+    comment: ''
+    value: 'ofdm_txrx._make_sync_word2(fft_len, occupied_carriers, pilot_carriers)'
+  states:
+    coordinate: [480, 140.0]
+    rotation: 0
+    state: enabled
+- name: header_equalizer
+  id: variable
+  parameters:
+    comment: ''
+    value: 'digital.ofdm_equalizer_simpledfe(fft_len, header_mod.base(), occupied_carriers, pilot_carriers, pilot_symbols, 0)'
+  states:
+    coordinate: [760, 140.0]
+    rotation: 0
+    state: enabled
+- name: payload_equalizer
+  id: variable
+  parameters:
+    comment: ''
+    value: 'digital.ofdm_equalizer_simpledfe(fft_len, payload_mod.base(), occupied_carriers, pilot_carriers, pilot_symbols, 1, 0.1)'
+  states:
+    coordinate: [760, 204.0]
+    rotation: 0
+    state: enabled
+- name: header_formatter
+  id: variable
+  parameters:
+    comment: ''
+    value: 'digital.packet_header_ofdm(occupied_carriers, 1, rx_len_key, frame_len_key, "packet_num", header_mod.bits_per_symbol(), payload_mod.bits_per_symbol(), False)'
+  states:
+    coordinate: [200, 204.0]
+    rotation: 0
+    state: enabled
+- name: samples_per_packet
+  id: variable
+  parameters:
+    comment: 'Sync (2) + header (1) + payload symbols, each fft_len + CP samples. 2400 with the defaults.'
+    value: '(3 + -(-(packet_len + 4) * 8 // (len(occupied_carriers[0]) * payload_mod.bits_per_symbol()))) * (fft_len + fft_len // 4)'
+  states:
+    coordinate: [1100, 140.0]
+    rotation: 0
+    state: enabled
+- name: rx_gain
+  id: variable_qtgui_range
+  parameters:
+    comment: ''
+    gui_hint: ''
+    label: RX Gain (dB)
+    min_len: '200'
+    orient: Qt.Horizontal
+    rangeType: float
+    start: '0'
+    step: '1'
+    stop: '70'
+    value: '40'
+    widget: counter_slider
+  states:
+    coordinate: [200, 268.0]
+    rotation: 0
+    state: enabled
+- name: rx_sync_threshold
+  id: variable_qtgui_range
+  parameters:
+    comment: ''
+    gui_hint: ''
+    label: RX Sync Threshold
+    min_len: '200'
+    orient: Qt.Horizontal
+    rangeType: float
+    start: '0.5'
+    step: '0.01'
+    stop: '0.95'
+    value: '0.8'
+    widget: counter_slider
+  states:
+    coordinate: [380, 268.0]
+    rotation: 0
+    state: enabled
+- name: rx_freq_corr
+  id: variable_qtgui_range
+  parameters:
+    comment: ''
+    gui_hint: ''
+    label: RX Frequency Correction (Hz)
+    min_len: '200'
+    orient: Qt.Horizontal
+    rangeType: float
+    start: '-50000'
+    step: '100'
+    stop: '50000'
+    value: '0'
+    widget: counter_slider
+  states:
+    coordinate: [560, 268.0]
+    rotation: 0
+    state: enabled
+- name: iio_pluto_source_0
+  id: iio_pluto_source
+  parameters:
+    affinity: ''
+    alias: ''
+    bandwidth: '1000000'
+    bbdc: 'True'
+    buffer_size: '32768'
+    comment: 'Tuned to center_freq + rx_freq_corr: use the correction slider to cancel the TX/RX crystal offset.'
+    filter: ''
+    filter_source: '''Auto'''
+    fpass: '0'
+    fstop: '0'
+    frequency: int(center_freq + rx_freq_corr)
+    gain1: '''manual'''
+    len_tag_key: ''
+    manual_gain1: rx_gain
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    quadrature: 'True'
+    rfdc: 'True'
+    samplerate: int(samp_rate)
+    type: fc32
+    uri: pluto_uri
+  states:
+    coordinate: [16, 470.0]
+    rotation: 0
+    state: enabled
+- name: qtgui_freq_sink_x_0
+  id: qtgui_freq_sink_x
+  parameters:
+    affinity: ''
+    alias: ''
+    alpha1: '1.0'
+    alpha10: '1.0'
+    alpha2: '1.0'
+    alpha3: '1.0'
+    alpha4: '1.0'
+    alpha5: '1.0'
+    alpha6: '1.0'
+    alpha7: '1.0'
+    alpha8: '1.0'
+    alpha9: '1.0'
+    autoscale: 'False'
+    average: '1.0'
+    axislabels: 'True'
+    bw: samp_rate
+    color1: '"blue"'
+    color10: '"dark blue"'
+    color2: '"red"'
+    color3: '"green"'
+    color4: '"black"'
+    color5: '"cyan"'
+    color6: '"magenta"'
+    color7: '"yellow"'
+    color8: '"dark red"'
+    color9: '"dark green"'
+    comment: ''
+    ctrlpanel: 'False'
+    fc: center_freq + rx_freq_corr
+    fftsize: '1024'
+    freqhalf: 'True'
+    grid: 'False'
+    gui_hint: ''
+    label: Relative Gain
+    label1: Rx Spectrum
+    label10: ''
+    label2: ''
+    label3: ''
+    label4: ''
+    label5: ''
+    label6: ''
+    label7: ''
+    label8: ''
+    label9: ''
+    legend: 'True'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    name: Rx Spectrum
+    nconnections: '1'
+    showports: 'True'
+    tr_chan: '0'
+    tr_level: '0.0'
+    tr_mode: qtgui.TRIG_MODE_FREE
+    tr_tag: '""'
+    type: complex
+    units: dB
+    update_time: '0.10'
+    width1: '1'
+    width10: '1'
+    width2: '1'
+    width3: '1'
+    width4: '1'
+    width5: '1'
+    width6: '1'
+    width7: '1'
+    width8: '1'
+    width9: '1'
+    wintype: window.WIN_BLACKMAN_hARRIS
+    ymax: '0'
+    ymin: '-100'
+  states:
+    coordinate: [16, 640.0]
+    rotation: 0
+    state: enabled
+- name: rx_sync
+  id: digital_ofdm_sync_sc_cfb
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: 'Schmidl & Cox packet detector. ofdm_rx hard-codes threshold 0.9, which misses ~60% of packets on the Pluto.'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    fft_len: fft_len
+    cp_len: fft_len//4
+    use_even_carriers: 'False'
+    threshold: rx_sync_threshold
+  states:
+    coordinate: [460, 580.0]
+    rotation: 0
+    state: enabled
+- name: rx_delay
+  id: blocks_delay
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    type: complex
+    delay: fft_len+fft_len//4
+    num_ports: '1'
+    vlen: '1'
+  states:
+    coordinate: [460, 500.0]
+    rotation: 0
+    state: enabled
+- name: rx_cfo_osc
+  id: analog_frequency_modulator_fc
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    sensitivity: '-2.0/fft_len'
+  states:
+    coordinate: [740, 596.0]
+    rotation: 0
+    state: enabled
+- name: rx_cfo_mixer
+  id: blocks_multiply_xx
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    type: complex
+    num_inputs: '2'
+    vlen: '1'
+  states:
+    coordinate: [940, 516.0]
+    rotation: 0
+    state: enabled
+- name: rx_hpd
+  id: digital_header_payload_demux
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    header_len: '3'
+    header_padding: '0'
+    items_per_symbol: fft_len
+    guard_interval: fft_len//4
+    length_tag_key: frame_len_key
+    trigger_tag_key: '""'
+    output_symbols: 'True'
+    type: complex
+    timing_tag_key: '""'
+    samp_rate: samp_rate
+    special_tags: '()'
+  states:
+    coordinate: [1120, 500.0]
+    rotation: 0
+    state: enabled
+- name: rx_hdr_fft
+  id: fft_vxx
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    type: complex
+    fft_size: fft_len
+    forward: 'True'
+    window: '()'
+    shift: 'True'
+    nthreads: '1'
+  states:
+    coordinate: [300, 700.0]
+    rotation: 0
+    state: enabled
+- name: rx_chanest
+  id: digital_ofdm_chanest_vcvc
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    sync_symbol1: sync_word1
+    sync_symbol2: sync_word2
+    n_data_symbols: '1'
+    eq_noise_red_len: '0'
+    max_carr_offset: '-1'
+    force_one_symbol: 'False'
+  states:
+    coordinate: [520, 700.0]
+    rotation: 0
+    state: enabled
+- name: rx_hdr_eq
+  id: digital_ofdm_frame_equalizer_vcvc
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    fft_len: fft_len
+    cp_len: fft_len//4
+    equalizer: header_equalizer.base()
+    len_tag_key: frame_len_key
+    propagate_channel_state: 'True'
+    fixed_frame_len: '1'
+  states:
+    coordinate: [800, 700.0]
+    rotation: 0
+    state: enabled
+- name: rx_hdr_ser
+  id: digital_ofdm_serializer_vcc
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    fft_len: fft_len
+    occupied_carriers: occupied_carriers
+    len_tag_key: frame_len_key
+    packet_len_tag_key: '""'
+    symbols_skipped: '0'
+    carr_offset_key: '""'
+    input_is_shifted: 'True'
+  states:
+    coordinate: [1080, 700.0]
+    rotation: 0
+    state: enabled
+- name: rx_hdr_demod
+  id: digital_constellation_decoder_cb
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    constellation: header_mod.base()
+  states:
+    coordinate: [1360, 700.0]
+    rotation: 0
+    state: enabled
+- name: rx_hdr_parser
+  id: digital_packet_headerparser_b
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    header_formatter: header_formatter.formatter()
+  states:
+    coordinate: [1600, 700.0]
+    rotation: 0
+    state: enabled
+- name: rx_pl_fft
+  id: fft_vxx
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    type: complex
+    fft_size: fft_len
+    forward: 'True'
+    window: '()'
+    shift: 'True'
+    nthreads: '1'
+  states:
+    coordinate: [300, 860.0]
+    rotation: 0
+    state: enabled
+- name: rx_pl_eq
+  id: digital_ofdm_frame_equalizer_vcvc
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    fft_len: fft_len
+    cp_len: fft_len//4
+    equalizer: payload_equalizer.base()
+    len_tag_key: frame_len_key
+    propagate_channel_state: 'False'
+    fixed_frame_len: '0'
+  states:
+    coordinate: [520, 860.0]
+    rotation: 0
+    state: enabled
+- name: rx_pl_ser
+  id: digital_ofdm_serializer_vcc
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    fft_len: fft_len
+    occupied_carriers: occupied_carriers
+    len_tag_key: frame_len_key
+    packet_len_tag_key: rx_len_key
+    symbols_skipped: '1'
+    carr_offset_key: '""'
+    input_is_shifted: 'True'
+  states:
+    coordinate: [800, 860.0]
+    rotation: 0
+    state: enabled
+- name: rx_pl_demod
+  id: digital_constellation_decoder_cb
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    constellation: payload_mod.base()
+  states:
+    coordinate: [1080, 860.0]
+    rotation: 0
+    state: enabled
+- name: rx_pl_repack
+  id: blocks_repack_bits_bb
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    k: payload_mod.bits_per_symbol()
+    l: '8'
+    len_tag_key: rx_len_key
+    align_output: 'True'
+    endianness: gr.GR_LSB_FIRST
+  states:
+    coordinate: [1300, 860.0]
+    rotation: 0
+    state: enabled
+- name: rx_crc
+  id: digital_crc32_bb
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: Drops packets that fail CRC. Output = correctly received payload bytes.
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    check: 'True'
+    lengthtagname: rx_len_key
+    packed: 'True'
+  states:
+    coordinate: [1540, 860.0]
+    rotation: 0
+    state: enabled
+- name: blocks_uchar_to_float_0
+  id: blocks_uchar_to_float
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    coordinate: [1800, 880.0]
+    rotation: 0
+    state: enabled
+- name: qtgui_time_sink_x_0
+  id: qtgui_time_sink_x
+  parameters:
+    affinity: ''
+    alias: ''
+    alpha1: '1.0'
+    alpha10: '1.0'
+    alpha2: '1.0'
+    alpha3: '1.0'
+    alpha4: '1.0'
+    alpha5: '1.0'
+    alpha6: '1.0'
+    alpha7: '1.0'
+    alpha8: '1.0'
+    alpha9: '1.0'
+    autoscale: 'True'
+    axislabels: 'True'
+    color1: '"blue"'
+    color10: '"blue"'
+    color2: '"red"'
+    color3: '"green"'
+    color4: '"black"'
+    color5: '"cyan"'
+    color6: '"magenta"'
+    color7: '"yellow"'
+    color8: '"dark red"'
+    color9: '"dark green"'
+    comment: ''
+    ctrlpanel: 'False'
+    entags: 'False'
+    grid: 'False'
+    gui_hint: ''
+    label1: ''
+    label10: ''
+    label2: ''
+    label3: ''
+    label4: ''
+    label5: ''
+    label6: ''
+    label7: ''
+    label8: ''
+    label9: ''
+    legend: 'True'
+    marker1: '-1'
+    marker10: '-1'
+    marker2: '-1'
+    marker3: '-1'
+    marker4: '-1'
+    marker5: '-1'
+    marker6: '-1'
+    marker7: '-1'
+    marker8: '-1'
+    marker9: '-1'
+    name: '"Decoded Bytes (x-axis = byte index)"'
+    nconnections: '1'
+    size: '1024'
+    srate: '1'
+    stemplot: 'False'
+    style1: '1'
+    style10: '1'
+    style2: '1'
+    style3: '1'
+    style4: '1'
+    style5: '1'
+    style6: '1'
+    style7: '1'
+    style8: '1'
+    style9: '1'
+    tr_chan: '0'
+    tr_delay: '0'
+    tr_level: '0.0'
+    tr_mode: qtgui.TRIG_MODE_FREE
+    tr_slope: qtgui.TRIG_SLOPE_POS
+    tr_tag: '""'
+    type: float
+    update_time: '0.10'
+    width1: '1'
+    width10: '1'
+    width2: '1'
+    width3: '1'
+    width4: '1'
+    width5: '1'
+    width6: '1'
+    width7: '1'
+    width8: '1'
+    width9: '1'
+    ylabel: Byte value
+    ymax: '1'
+    ymin: '-1'
+    yunit: '""'
+  states:
+    coordinate: [1960, 860.0]
+    rotation: 0
+    state: enabled
+- name: rx_capture
+  id: blocks_file_sink
+  parameters:
+    affinity: ''
+    alias: ''
+    append: 'False'
+    comment: Raw RX samples for offline analysis (~4.8 MB/s at 600 kS/s). Disable when not needed.
+    file: rx_capture.cfile
+    type: complex
+    unbuffered: 'False'
+    vlen: '1'
+  states:
+    coordinate: [16, 780.0]
+    rotation: 0
+    state: disabled
+- name: qtgui_const_sink_payload
+  id: qtgui_const_sink_x
+  parameters:
+    type: complex
+    name: '"Payload constellation (after equalizer)"'
+    size: '1024'
+    grid: 'False'
+    autoscale: 'False'
+    ymin: '-1.5'
+    ymax: '1.5'
+    xmin: '-1.5'
+    xmax: '1.5'
+    nconnections: '1'
+    update_time: '0.10'
+    gui_hint: ''
+    tr_mode: qtgui.TRIG_MODE_FREE
+    tr_slope: qtgui.TRIG_MODE_POS
+    tr_level: '0.0'
+    tr_chan: '0'
+    tr_tag: '""'
+    legend: 'True'
+    axislabels: 'True'
+    label1: QPSK
+    width1: '1'
+    color1: '"blue"'
+    style1: '0'
+    marker1: '0'
+    alpha1: '1.0'
+    label2: ''
+    width2: '1'
+    color2: '"red"'
+    style2: '0'
+    marker2: '0'
+    alpha2: '1.0'
+    label3: ''
+    width3: '1'
+    color3: '"green"'
+    style3: '0'
+    marker3: '0'
+    alpha3: '1.0'
+    label4: ''
+    width4: '1'
+    color4: '"black"'
+    style4: '0'
+    marker4: '0'
+    alpha4: '1.0'
+    label5: ''
+    width5: '1'
+    color5: '"cyan"'
+    style5: '0'
+    marker5: '0'
+    alpha5: '1.0'
+    label6: ''
+    width6: '1'
+    color6: '"magenta"'
+    style6: '0'
+    marker6: '0'
+    alpha6: '1.0'
+    label7: ''
+    width7: '1'
+    color7: '"yellow"'
+    style7: '0'
+    marker7: '0'
+    alpha7: '1.0'
+    label8: ''
+    width8: '1'
+    color8: '"dark red"'
+    style8: '0'
+    marker8: '0'
+    alpha8: '1.0'
+    label9: ''
+    width9: '1'
+    color9: '"dark green"'
+    style9: '0'
+    marker9: '0'
+    alpha9: '1.0'
+    label10: ''
+    width10: '1'
+    color10: '"dark blue"'
+    style10: '0'
+    marker10: '0'
+    alpha10: '1.0'
+    comment: ''
+    affinity: ''
+    alias: ''
+  states:
+    coordinate: [1080, 1000.0]
+    rotation: 0
+    state: enabled
+- name: rx_monitor
+  id: epy_block
+  parameters:
+    _source_code: "\"\"\"\nRX Link Monitor (receiver-only statistics for a two-Pluto link).\n\nInputs (all from the receiver chain):\n  0: float  - Schmidl & Cox fine frequency offset output (one value per RX sample)\n  1: uint8  - Schmidl & Cox detect output (1 at each detected packet start)\n  2: uint8  - CRC32 output (correctly received payload bytes, 'rx_len' tags)\n\nExpected packets are derived from elapsed RX samples, because the transmitter\nsends packets back to back (samples_per_packet each). Received = packets that\npassed CRC. Frequency offset = integer carrier offset (tag from the channel\nestimator, carried to the CRC output) + Schmidl & Cox fine offset.\nget_stats() is polled by a Function Probe.\n\"\"\"\nimport time\nimport numpy as np\nimport pmt\nfrom gnuradio import gr\n\n\nclass blk(gr.basic_block):\n    def __init__(self, samp_rate=1e6, fft_len=64, samples_per_packet=2400):\n        gr.basic_block.__init__(self, name='RX Link Monitor',\n                             \
+      \   in_sig=[np.float32, np.uint8, np.uint8], out_sig=None)\n        self.samp_rate = float(samp_rate)\n        self.fft_len = int(fft_len)\n        self.spp = float(samples_per_packet)\n        self.rx_key = pmt.intern('rx_len')\n        self.co_key = pmt.intern('ofdm_sync_carr_offset')\n        self.samples = 0\n        self.detections = 0\n        self.rx_total = 0\n        self.carr_offset = 0\n        self.fine = []\n        self._last = (time.time(), 0, 0, 0)\n\n    def forecast(self, noutput_items, ninputs):\n        return [1, 1, 0]  # inputs 0/1 always flow; CRC output only when packets decode\n\n    def general_work(self, input_items, output_items):\n        n = min(len(input_items[0]), len(input_items[1]))\n        if n:\n            det = np.nonzero(input_items[1][:n])[0]\n            self.detections += len(det)\n            if len(det):\n                self.fine.extend(input_items[0][:n][det].tolist())\n                self.fine = self.fine[-200:]\n            self.samples\
+      \ += n\n            self.consume(0, n)\n            self.consume(1, n)\n        m = len(input_items[2])\n        if m:\n            start = self.nitems_read(2)\n            for t in self.get_tags_in_range(2, start, start + m):\n                if pmt.eq(t.key, self.rx_key):\n                    self.rx_total += 1\n                elif pmt.eq(t.key, self.co_key):\n                    self.carr_offset = pmt.to_long(t.value)\n            self.consume(2, m)\n        return 0\n\n    def cfo_hz(self):\n        \"\"\"Estimated TX-RX frequency offset in Hz (positive: TX is above the RX tuning).\"\"\"\n        if not self.fine:\n            return None\n        fine = float(np.median(self.fine)) * self.samp_rate / (np.pi * self.fft_len)\n        return fine + self.carr_offset * self.samp_rate / self.fft_len\n\n    def get_stats(self):\n        now, s, rx, det = time.time(), self.samples, self.rx_total, self.detections\n        t0, s0, rx0, det0 = self._last\n        self._last = (now, s, rx,\
+      \ det)\n        dt = max(now - t0, 1e-3)\n        expected = (s - s0) / self.spp\n        drx = rx - rx0\n        pct = min(100.0, 100.0 * drx / expected) if expected >= 1 else 0.0\n        cfo = self.cfo_hz()\n        cfo_txt = 'n/a' if cfo is None else '{:+.2f} kHz'.format(cfo / 1e3)\n        return ('RX {:d} packets  |  {:.0f} pkt/s  |  {:.1f}% received  |  '\n                '{:.0f} detections/s  |  freq. offset {}').format(\n            rx, drx / dt, pct, (det - det0) / dt, cfo_txt)\n"
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    samp_rate: samp_rate
+    fft_len: fft_len
+    samples_per_packet: samples_per_packet
+  states:
+    _io_cache: ''
+    coordinate: [1800, 980.0]
+    rotation: 0
+    state: enabled
+- name: rx_stats
+  id: variable_function_probe
+  parameters:
+    block_id: rx_monitor
+    comment: ''
+    function_args: ''
+    function_name: get_stats
+    poll_rate: '1'
+    value: '"waiting for packets..."'
+  states:
+    coordinate: [740, 268.0]
+    rotation: 0
+    state: enabled
+- name: rx_stats_label
+  id: variable_qtgui_label
+  parameters:
+    comment: ''
+    formatter: 'None'
+    gui_hint: ''
+    label: Link
+    type: string
+    value: rx_stats
+  states:
+    coordinate: [920, 268.0]
+    rotation: 0
+    state: enabled
+connections:
+- [rx_delay, '0', rx_cfo_mixer, '0']
+- [rx_sync, '0', rx_cfo_osc, '0']
+- [rx_cfo_osc, '0', rx_cfo_mixer, '1']
+- [rx_cfo_mixer, '0', rx_hpd, '0']
+- [rx_sync, '1', rx_hpd, '1']
+- [rx_hpd, '0', rx_hdr_fft, '0']
+- [rx_hdr_fft, '0', rx_chanest, '0']
+- [rx_chanest, '0', rx_hdr_eq, '0']
+- [rx_hdr_eq, '0', rx_hdr_ser, '0']
+- [rx_hdr_ser, '0', rx_hdr_demod, '0']
+- [rx_hdr_demod, '0', rx_hdr_parser, '0']
+- [rx_hdr_parser, header_data, rx_hpd, header_data]
+- [rx_hpd, '1', rx_pl_fft, '0']
+- [rx_pl_fft, '0', rx_pl_eq, '0']
+- [rx_pl_eq, '0', rx_pl_ser, '0']
+- [rx_pl_ser, '0', rx_pl_demod, '0']
+- [rx_pl_demod, '0', rx_pl_repack, '0']
+- [rx_pl_repack, '0', rx_crc, '0']
+- [iio_pluto_source_0, '0', rx_sync, '0']
+- [iio_pluto_source_0, '0', rx_delay, '0']
+- [iio_pluto_source_0, '0', qtgui_freq_sink_x_0, '0']
+- [iio_pluto_source_0, '0', rx_capture, '0']
+- [rx_crc, '0', blocks_uchar_to_float_0, '0']
+- [blocks_uchar_to_float_0, '0', qtgui_time_sink_x_0, '0']
+- [rx_pl_ser, '0', qtgui_const_sink_payload, '0']
+- [rx_sync, '0', rx_monitor, '0']
+- [rx_sync, '1', rx_monitor, '1']
+- [rx_crc, '0', rx_monitor, '2']
+metadata:
+  file_format: 1
